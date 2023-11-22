@@ -14,24 +14,24 @@
 
 #include <pcosynchro/pcosemaphore.h>
 
-#include "locomotive.h"
 #include "ctrain_handler.h"
+#include "locomotive.h"
 #include "synchrointerface.h"
+
 
 /**
  * @brief La classe Synchro implémente l'interface SynchroInterface qui
  * propose les méthodes liées à la section partagée.
  */
-class Synchro final : public SynchroInterface
-{
+class Synchro final : public SynchroInterface {
 public:
-
     /**
      * @brief Synchro Constructeur de la classe qui représente la section partagée.
      * Initialisez vos éventuels attributs ici, sémaphores etc.
      */
     Synchro() {
         // TODO
+        diriger_aiguillage(8, TOUT_DROIT, 0);
     }
 
     /**
@@ -43,7 +43,17 @@ public:
      */
     void access(Locomotive &loco) override {
         // TODO
-
+        mutex.acquire();
+        if (CSFree) {
+            CSFree = false;
+            mutex.release();
+            CSAccess.acquire();
+        } else {
+            mutex.release();
+            loco.arreter();
+            CSAccess.acquire();
+            loco.demarrer();
+        }
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 accesses the shared section.").arg(loco.numero())));
     }
@@ -55,8 +65,10 @@ public:
      *
      * @param loco La locomotive qui quitte la section partagée
      */
-    void leave(Locomotive& loco) override {
+    void leave(Locomotive &loco) override {
         // TODO
+        CSAccess.release();
+        CSFree = true;
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 leaves the shared section.").arg(loco.numero())));
@@ -70,7 +82,7 @@ public:
      *
      * @param loco La locomotive qui doit attendre à la gare
      */
-    void stopAtStation(Locomotive& loco) override {
+    void stopAtStation(Locomotive &loco) override {
         // TODO
 
         // Exemple de message dans la console globale
@@ -82,7 +94,10 @@ public:
 private:
     // Méthodes privées ...
     // Attribut privés ...
+    bool CSFree;//whether the critical section is free
+    PcoSemaphore CSAccess{1};
+    PcoSemaphore mutex{1};
 };
 
 
-#endif // SYNCHRO_H
+#endif// SYNCHRO_H

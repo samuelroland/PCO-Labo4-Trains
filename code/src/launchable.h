@@ -20,8 +20,7 @@
  * associé qui permet d'être lancé, thread qui exécute la fonction run() qui représente le
  * comportement de la classe qui la définit.
  */
-class Launchable
-{
+class Launchable {
 public:
     Launchable() {}
 
@@ -46,7 +45,6 @@ public:
     };
 
 protected:
-
     /*!
      * \brief run La fonction à lancer, ici abstraite (virtuelle pure), est redéfinie par les
      * classes concrètes qui héritent de la classe Launchable.
@@ -56,18 +54,17 @@ protected:
     /*!
      * \brief printStartMessage Message affiché au lancement du thread
      */
-    virtual void printStartMessage() {qDebug() << "[START] Un thread lancé";}
+    virtual void printStartMessage() { qDebug() << "[START] Un thread lancé"; }
 
     /*!
      * \brief printCompletionMessage Message affiché après la fin du thread
      */
-    virtual void printCompletionMessage() {qDebug() << "[STOP] Un thread a terminé";}
+    virtual void printCompletionMessage() { qDebug() << "[STOP] Un thread a terminé"; }
 
     /*!
      * \brief thread Le thread associé
      */
     std::unique_ptr<PcoThread> thread = nullptr;
-
 };
 
-#endif // LAUNCHABLE_H
+#endif// LAUNCHABLE_H

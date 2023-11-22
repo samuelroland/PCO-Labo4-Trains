@@ -10,8 +10,8 @@
 
 #include "locomotive.h"
 #include "locomotivebehavior.h"
-#include "synchrointerface.h"
 #include "synchro.h"
+#include "synchrointerface.h"
 
 // Locomotives :
 // Vous pouvez changer les vitesses initiales, ou utiliser la fonction loco.fixerVitesse(vitesse);
@@ -23,8 +23,7 @@ static Locomotive locoA(7 /* Numéro (pour commande trains sur maquette réelle)
 static Locomotive locoB(42 /* Numéro (pour commande trains sur maquette réelle) */, 12 /* Vitesse */);
 
 //Arret d'urgence
-void emergency_stop()
-{
+void emergency_stop() {
     locoA.arreter();
     locoB.arreter();
     afficher_message("\nSTOP!");
@@ -32,8 +31,7 @@ void emergency_stop()
 
 
 //Fonction principale
-int cmain()
-{
+int cmain() {
     /************
      * Maquette *
      ************/
@@ -50,27 +48,27 @@ int cmain()
     // Vous devrez utiliser cette fonction pour la section partagée pour aiguiller les locos
     // sur le bon parcours (par exemple à la sortie de la section partagée) vous pouvez l'
     // appeler depuis vos thread des locos par ex.
-    diriger_aiguillage(1,  TOUT_DROIT, 0);
-    diriger_aiguillage(2,  DEVIE     , 0);
-    diriger_aiguillage(3,  DEVIE     , 0);
-    diriger_aiguillage(4,  TOUT_DROIT, 0);
-    diriger_aiguillage(5,  TOUT_DROIT, 0);
-    diriger_aiguillage(6,  TOUT_DROIT, 0);
-    diriger_aiguillage(7,  TOUT_DROIT, 0);
-    diriger_aiguillage(8,  DEVIE     , 0);
-    diriger_aiguillage(9,  DEVIE     , 0);
+    diriger_aiguillage(1, TOUT_DROIT, 0);
+    diriger_aiguillage(2, DEVIE, 0);
+    diriger_aiguillage(3, DEVIE, 0);
+    diriger_aiguillage(4, TOUT_DROIT, 0);
+    diriger_aiguillage(5, TOUT_DROIT, 0);
+    diriger_aiguillage(6, TOUT_DROIT, 0);
+    diriger_aiguillage(7, TOUT_DROIT, 0);
+    diriger_aiguillage(8, DEVIE, 0);
+    diriger_aiguillage(9, DEVIE, 0);
     diriger_aiguillage(10, TOUT_DROIT, 0);
     diriger_aiguillage(11, TOUT_DROIT, 0);
     diriger_aiguillage(12, TOUT_DROIT, 0);
     diriger_aiguillage(13, TOUT_DROIT, 0);
-    diriger_aiguillage(14, DEVIE     , 0);
-    diriger_aiguillage(15, DEVIE     , 0);
+    diriger_aiguillage(14, DEVIE, 0);
+    diriger_aiguillage(15, DEVIE, 0);
     diriger_aiguillage(16, TOUT_DROIT, 0);
     diriger_aiguillage(17, TOUT_DROIT, 0);
     diriger_aiguillage(18, TOUT_DROIT, 0);
     diriger_aiguillage(19, TOUT_DROIT, 0);
-    diriger_aiguillage(20, DEVIE     , 0);
-    diriger_aiguillage(21, DEVIE     , 0);
+    diriger_aiguillage(20, DEVIE, 0);
+    diriger_aiguillage(21, DEVIE, 0);
     diriger_aiguillage(22, TOUT_DROIT, 0);
     diriger_aiguillage(23, TOUT_DROIT, 0);
     diriger_aiguillage(24, TOUT_DROIT, 0);
@@ -103,9 +101,9 @@ int cmain()
     std::shared_ptr<SynchroInterface> sharedSection = std::make_shared<Synchro>();
 
     // Création du thread pour la loco 0
-    std::unique_ptr<Launchable> locoBehaveA = std::make_unique<LocomotiveBehavior>(locoA, sharedSection /*, autres paramètres ...*/);
+    std::unique_ptr<Launchable> locoBehaveA = std::make_unique<LocomotiveBehavior>(locoA, sharedSection, std::make_pair(25, 14) /*, autres paramètres ...*/);
     // Création du thread pour la loco 1
-    std::unique_ptr<Launchable> locoBehaveB = std::make_unique<LocomotiveBehavior>(locoB, sharedSection /*, autres paramètres ...*/);
+    std::unique_ptr<Launchable> locoBehaveB = std::make_unique<LocomotiveBehavior>(locoB, sharedSection, std::make_pair(22, 10) /*, autres paramètres ...*/);
 
     // Lanchement des threads
     afficher_message(qPrintable(QString("Lancement thread loco A (numéro %1)").arg(locoA.numero())));

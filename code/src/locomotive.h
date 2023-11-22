@@ -13,8 +13,7 @@
 
 #include <QString>
 
-class Locomotive
-{
+class Locomotive {
 
 public:
     int priority;
@@ -85,4 +84,4 @@ private:
     bool _enFonction;
 };
 
-#endif // LOCOMOTIVE_H
+#endif// LOCOMOTIVE_H
