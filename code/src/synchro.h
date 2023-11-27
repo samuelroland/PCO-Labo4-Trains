@@ -31,7 +31,6 @@ public:
      */
     Synchro() {
         // TODO
-        diriger_aiguillage(8, TOUT_DROIT, 0);
         diriger_aiguillage(16, DEVIE, 0);
     }
 
