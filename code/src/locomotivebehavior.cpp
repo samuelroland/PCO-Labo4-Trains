@@ -24,9 +24,6 @@ void LocomotiveBehavior::run() {
     //sharedSection->stopAtStation(loco);
 
     while (true) {
-        // On attend qu'une locomotive arrive sur le contact 1.
-        // Pertinent de faire ça dans les deux threads? Pas sûr...
-
         // Gare
         attendre_contact(station);
         sharedSection->stopAtStation(loco);
@@ -37,22 +34,23 @@ void LocomotiveBehavior::run() {
         sharedSection->access(loco);
 
         //TODO changer les aiguillages
-        if(loco.numero() == 7){   //loco rouge
-            diriger_aiguillage(17, TOUT_DROIT, 0);
-            diriger_aiguillage(15, DEVIE, 0);
+        if (loco.numero() == 7) {//loco rouge
+            // diriger_aiguillage(17, TOUT_DROIT, 0);
+            // diriger_aiguillage(15, DEVIE, 0);
             diriger_aiguillage(8, DEVIE, 0);
-        } 
-        if(loco.numero() == 42){   //loco bleu
-            diriger_aiguillage(16, DEVIE, 0);
-            diriger_aiguillage(15, TOUT_DROIT, 0);
-            diriger_aiguillage(7, DEVIE, 0);
-            diriger_aiguillage(11, DEVIE, 0);
+            // diriger_aiguillage(11, DEVIE, 0);
+        }
+        if (loco.numero() == 42) {//loco bleu
+            diriger_aiguillage(8, TOUT_DROIT, 0);
+            // diriger_aiguillage(15, TOUT_DROIT, 0);
+            // diriger_aiguillage(7, DEVIE, 0);
+            // diriger_aiguillage(11, TOUT_DROIT, 0);
         }
 
         // Sortie de la SC
         attendre_contact(delimitorsCS.second);
         loco.afficherMessage("Je quitte la section commune");
-        //sharedSection->leave(loco);
+        sharedSection->leave(loco);
     }
 }
 
