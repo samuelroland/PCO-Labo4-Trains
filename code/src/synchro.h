@@ -42,13 +42,13 @@ public:
         mutex.acquire();
         //Then look if the critical section is free -> go or wait.
         if (CSFree && loco.priority == 0) {
-            loco.afficherMessage(qPrintable(QString("Je suis prioritaire (priority = %1) pour la SC").arg(loco.priority)));
-
             CSFree = false;
             mutex.release();
+
+            loco.afficherMessage(qPrintable(QString("Je suis prioritaire (priority = %1) pour la SC").arg(loco.priority)));
         } else {
-            loco.afficherMessage(qPrintable(QString("Je ne suis PAS prioritaire (priority = %1) donc j'attends !").arg(loco.priority)));
             mutex.release();
+            loco.afficherMessage(qPrintable(QString("Je ne suis PAS prioritaire (priority = %1) donc j'attends !").arg(loco.priority)));
             loco.arreter();
             CSAccess.acquire();
             loco.demarrer();
@@ -67,6 +67,7 @@ public:
         mutex.acquire();
         CSFree = true;
         mutex.release();
+
         //Si nous sommes la locomotive prioritaire, nous pouvons relacher l'accès pour l'autre
         if (loco.priority == 0)
             CSAccess.release();
