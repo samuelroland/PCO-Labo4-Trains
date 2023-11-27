@@ -34,10 +34,20 @@ void LocomotiveBehavior::run() {
         // Entrée dans la SC
         attendre_contact(delimitorsCS.first);
         loco.afficherMessage("J'ai atteint la section commune");
-        //sharedSection->access(loco);
+        sharedSection->access(loco);
 
         //TODO changer les aiguillages
-        //diriger_aiguillage()
+        if(loco.numero() == 7){   //loco rouge
+            diriger_aiguillage(17, TOUT_DROIT, 0);
+            diriger_aiguillage(15, DEVIE, 0);
+            diriger_aiguillage(8, DEVIE, 0);
+        } 
+        if(loco.numero() == 42){   //loco bleu
+            diriger_aiguillage(16, DEVIE, 0);
+            diriger_aiguillage(15, TOUT_DROIT, 0);
+            diriger_aiguillage(7, DEVIE, 0);
+            diriger_aiguillage(11, DEVIE, 0);
+        }
 
         // Sortie de la SC
         attendre_contact(delimitorsCS.second);
