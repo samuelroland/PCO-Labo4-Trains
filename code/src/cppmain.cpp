@@ -80,11 +80,11 @@ int cmain() {
 
     // Loco 0
     // Exemple de position de départ
-    locoA.fixerPosition(25, 32);
+    locoA.fixerPosition(34, 5);
 
     // Loco 1
     // Exemple de position de départ
-    locoB.fixerPosition(22, 28);
+    locoB.fixerPosition(31, 1);
 
     /***********
      * Message *
