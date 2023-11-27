@@ -87,12 +87,22 @@ public:
      */
     void stopAtStation(Locomotive &loco) override {
         // TODO
-        loco.arreter();
-        PcoThread::usleep(5e6);
-        loco.demarrer();
-
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 arrives at the station.").arg(loco.numero())));
+
+        loco.arreter();
+        mutex2.acquire();
+        if (nbLocoAtStation < 1) {
+            nbLocoAtStation++;
+            mutex2.release();
+            stationWaitMutex.acquire();
+        } else {
+            nbLocoAtStation--;
+            mutex2.release();
+            stationWaitMutex.release();
+        }
+        PcoThread::usleep(2e6);//TODO: get back to 5e6
+        loco.demarrer();
     }
 
     /* A vous d'ajouter ce qu'il vous faut */
@@ -103,6 +113,10 @@ private:
     bool CSFree;//whether the critical section is free
     PcoSemaphore CSAccess{1};
     PcoSemaphore mutex{1};
+
+    int nbLocoAtStation = 0;
+    PcoSemaphore mutex2{1};
+    PcoSemaphore stationWaitMutex{0};
 };
 
 
