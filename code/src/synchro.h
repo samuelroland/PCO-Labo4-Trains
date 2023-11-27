@@ -67,8 +67,10 @@ public:
      */
     void leave(Locomotive &loco) override {
         // TODO
+        mutex.acquire();
         CSAccess.release();
         CSFree = true;
+        mutex.release();
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 leaves the shared section.").arg(loco.numero())));
@@ -84,6 +86,9 @@ public:
      */
     void stopAtStation(Locomotive &loco) override {
         // TODO
+        loco.arreter();
+        PcoThread::usleep(5e6);
+        loco.demarrer();
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 arrives at the station.").arg(loco.numero())));
