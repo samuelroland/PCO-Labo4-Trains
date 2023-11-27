@@ -44,9 +44,25 @@ public:
     void access(Locomotive &loco) override {
         // TODO
         mutex.acquire();
+        //TODO: merge the 2 strategies to maybe use only one mutex
+        //or just to make this process nicer
+
+        //First make sure we have the priority -> continue or wait
+        if (priorityLocoNumero == loco.numero()) {
+            loco.afficherMessage("Je suis prioritaire je rentre dans la SC !");
+        } else {
+            afficher_message(qPrintable(QString("The loco %1 is waiting on loco %2 to leave the CS").arg(loco.numero()).arg(priorityLocoNumero)));
+            loco.arreter();
+            mutex.release();
+            priorityMutex.acquire();
+            mutex.acquire();
+        }
+
+        //Then look if the critical section is free -> go or wait.
         if (CSFree) {
             CSFree = false;
             mutex.release();
+            loco.demarrer();
             CSAccess.acquire();
         } else {
             mutex.release();
@@ -67,10 +83,13 @@ public:
      */
     void leave(Locomotive &loco) override {
         // TODO
-        mutex.acquire();
         CSAccess.release();
+        mutex.acquire();
         CSFree = true;
         mutex.release();
+		//Si nous sommes la locomotive prioritaire, nous pouvons relacher la priorité
+        if (priorityLocoNumero == loco.numero())
+            priorityMutex.release();
 
         // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 leaves the shared section.").arg(loco.numero())));
@@ -91,12 +110,18 @@ public:
 
         loco.arreter();
         mutex2.acquire();
+        //First init of priorityLocoNumero
+        if (priorityLocoNumero == 0) {
+            priorityLocoNumero = loco.numero();
+        }
+
         if (nbLocoAtStation < 1) {
             nbLocoAtStation++;
             mutex2.release();
             stationWaitMutex.acquire();
         } else {
             nbLocoAtStation--;
+            priorityLocoNumero = loco.numero();
             mutex2.release();
             stationWaitMutex.release();
         }
@@ -116,6 +141,9 @@ private:
     int nbLocoAtStation = 0;
     PcoSemaphore mutex2{1};
     PcoSemaphore stationWaitMutex{0};
+
+    PcoSemaphore priorityMutex{0};
+    volatile int priorityLocoNumero = 0;
 };
 
 
