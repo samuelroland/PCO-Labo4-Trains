@@ -29,10 +29,7 @@ public:
      * @brief Synchro Constructeur de la classe qui représente la section partagée.
      * Initialisez vos éventuels attributs ici, sémaphores etc.
      */
-    Synchro() {
-        // TODO
-        diriger_aiguillage(16, DEVIE, 0);
-    }
+    Synchro() {}
 
     /**
      * @brief access Méthode à appeler pour accéder à la section partagée
@@ -42,35 +39,20 @@ public:
      * @param loco La locomotive qui essaie accéder à la section partagée
      */
     void access(Locomotive &loco) override {
-        // TODO
         mutex.acquire();
-        //TODO: merge the 2 strategies to maybe use only one mutex
-        //or just to make this process nicer
-
-        //First make sure we have the priority -> continue or wait
-        if (priorityLocoNumero == loco.numero()) {
-            loco.afficherMessage("Je suis prioritaire je rentre dans la SC !");
-        } else {
-            afficher_message(qPrintable(QString("The loco %1 is waiting on loco %2 to leave the CS").arg(loco.numero()).arg(priorityLocoNumero)));
-            loco.arreter();
-            mutex.release();
-            priorityMutex.acquire();
-            mutex.acquire();
-        }
-
         //Then look if the critical section is free -> go or wait.
-        if (CSFree) {
+        if (CSFree && loco.priority == 0) {
+            loco.afficherMessage(qPrintable(QString("Je suis prioritaire (priority = %1) pour la SC").arg(loco.priority)));
+
             CSFree = false;
             mutex.release();
-            loco.demarrer();
-            CSAccess.acquire();
         } else {
+            loco.afficherMessage(qPrintable(QString("Je ne suis PAS prioritaire (priority = %1) donc j'attends !").arg(loco.priority)));
             mutex.release();
             loco.arreter();
             CSAccess.acquire();
             loco.demarrer();
         }
-        // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 accesses the shared section.").arg(loco.numero())));
     }
 
@@ -82,16 +64,13 @@ public:
      * @param loco La locomotive qui quitte la section partagée
      */
     void leave(Locomotive &loco) override {
-        // TODO
-        CSAccess.release();
         mutex.acquire();
         CSFree = true;
         mutex.release();
-		//Si nous sommes la locomotive prioritaire, nous pouvons relacher la priorité
-        if (priorityLocoNumero == loco.numero())
-            priorityMutex.release();
+        //Si nous sommes la locomotive prioritaire, nous pouvons relacher l'accès pour l'autre
+        if (loco.priority == 0)
+            CSAccess.release();
 
-        // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 leaves the shared section.").arg(loco.numero())));
     }
 
@@ -104,28 +83,27 @@ public:
      * @param loco La locomotive qui doit attendre à la gare
      */
     void stopAtStation(Locomotive &loco) override {
-        // TODO
-        // Exemple de message dans la console globale
         afficher_message(qPrintable(QString("The engine no. %1 arrives at the station.").arg(loco.numero())));
 
         loco.arreter();
         mutex2.acquire();
-        //First init of priorityLocoNumero
-        if (priorityLocoNumero == 0) {
-            priorityLocoNumero = loco.numero();
-        }
-
-        if (nbLocoAtStation < 1) {
-            nbLocoAtStation++;
+        if (nbLocoWaiting < 1) {
+            nbLocoWaiting++;
+            loco.priority = totalNbLocos - nbLocoWaiting;
             mutex2.release();
             stationWaitMutex.acquire();
         } else {
-            nbLocoAtStation--;
-            priorityLocoNumero = loco.numero();
+            nbLocoWaiting++;
+            loco.priority = totalNbLocos - nbLocoWaiting;
             mutex2.release();
             stationWaitMutex.release();
         }
+        loco.afficherMessage("Début de l'attente en gare");
+        loco.arreter();
         PcoThread::usleep(2e6);//TODO: get back to 5e6
+        mutex2.acquire();
+        nbLocoWaiting--;
+        mutex2.release();
         loco.demarrer();
     }
 
@@ -134,16 +112,18 @@ public:
 private:
     // Méthodes privées ...
     // Attribut privés ...
-    bool CSFree;//whether the critical section is free
-    PcoSemaphore CSAccess{1};
+    //Permet la gestion de l'entrée et sortie en section critique
+    bool CSFree = true;//whether the critical section is free
+    PcoSemaphore CSAccess{0};
     PcoSemaphore mutex{1};
 
-    int nbLocoAtStation = 0;
-    PcoSemaphore mutex2{1};
+    //Permet l'attente de l'autre locomotive en gare
     PcoSemaphore stationWaitMutex{0};
 
-    PcoSemaphore priorityMutex{0};
-    volatile int priorityLocoNumero = 0;
+    //Permet la gestion des priorités
+    PcoSemaphore mutex2{1};
+    int nbLocoWaiting = 0;
+    const int totalNbLocos = 2;
 };
 
 
