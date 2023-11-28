@@ -85,34 +85,38 @@ public:
      */
     void stopAtStation(Locomotive &loco) override {
         afficher_message(qPrintable(QString("The engine no. %1 arrives at the station.").arg(loco.numero())));
+        loco.afficherMessage("Arrivée en gare");
 
         loco.arreter();
+
+        //Assignation priorité et comptage nombre de loco en attente
         mutex2.acquire();
-        if (nbLocoWaiting < 1) {
-            nbLocoWaiting++;
-            loco.priority = totalNbLocos - nbLocoWaiting;
-            mutex2.release();
+        loco.priority = TOTAL_NB_LOCOS - ++nbLocoWaiting;
+        int localNbLocoWaiting = nbLocoWaiting;
+        mutex2.release();
+
+        //Attente mutuelle des locomotives
+        if (localNbLocoWaiting < TOTAL_NB_LOCOS) {
             stationWaitMutex.acquire();
         } else {
-            nbLocoWaiting++;
-            loco.priority = totalNbLocos - nbLocoWaiting;
-            mutex2.release();
-            stationWaitMutex.release();
+            //Libérer les autres locomotives pour qu'elles puissent attendre puis repartir
+            for (int i = 1; i < TOTAL_NB_LOCOS; i++) {
+                stationWaitMutex.release();
+            }
         }
-        loco.afficherMessage("Début de l'attente en gare");
-        loco.arreter();
+
+        //Attente de changement des passagers
+        loco.afficherMessage("Début de l'attente commune en gare");
         PcoThread::usleep(2e6);//TODO: get back to 5e6
+
         mutex2.acquire();
         nbLocoWaiting--;
         mutex2.release();
+
         loco.demarrer();
     }
 
-    /* A vous d'ajouter ce qu'il vous faut */
-
 private:
-    // Méthodes privées ...
-    // Attribut privés ...
     //Permet la gestion de l'entrée et sortie en section critique
     bool CSFree = true;//whether the critical section is free
     PcoSemaphore CSAccess{0};
@@ -124,7 +128,7 @@ private:
     //Permet la gestion des priorités
     PcoSemaphore mutex2{1};
     int nbLocoWaiting = 0;
-    const int totalNbLocos = 2;
+    const int TOTAL_NB_LOCOS = 2;
 };
 
 
