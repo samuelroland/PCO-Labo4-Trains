@@ -63,7 +63,7 @@ protected:
     const std::pair<int, int> delimitorsCS;
     //Numéro de contact de la gare
     const int station;
-    //Changements à faire sur l'aiguillages avant au moment de rentrer en SC
+    //Changements à faire sur l'aiguillages au moment de rentrer en SC
     std::map<int, int> aiguillagesChanges;
 };
 

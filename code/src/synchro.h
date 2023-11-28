@@ -39,17 +39,17 @@ public:
      * @param loco La locomotive qui essaie accéder à la section partagée
      */
     void access(Locomotive &loco) override {
-        mutex.acquire();
+        CSMutex.acquire();
         //Tant que ce n'est pas libre et qu'on est pas la prochaine locomotive à pouvoir traverser la SC
-        while (!CSFree || loco.priority != nbLocoLeavedSC) {
-            mutex.release();
+        while (!CSFree || loco.priority != nbLocoLeavedCS) {
+            CSMutex.release();
             loco.arreter();
             loco.afficherMessage(qPrintable(QString("Je ne suis PAS prioritaire (priority = %1) donc j'attends !").arg(loco.priority)));
             CSAccess.acquire();
-            mutex.acquire();
+            CSMutex.acquire();
         }
         CSFree = false;
-        mutex.release();
+        CSMutex.release();
 
         loco.demarrer();
 
@@ -66,11 +66,11 @@ public:
      * @param loco La locomotive qui quitte la section partagée
      */
     void leave(Locomotive &loco) override {
-        mutex.acquire();
-        nbLocoLeavedSC = ++nbLocoLeavedSC % TOTAL_NB_LOCOS;
-        int nbLocoWaitingToGiveAChance = TOTAL_NB_LOCOS - nbLocoLeavedSC;
+        CSMutex.acquire();
+        nbLocoLeavedCS = ++nbLocoLeavedCS % TOTAL_NB_LOCOS;
+        int nbLocoWaitingToGiveAChance = TOTAL_NB_LOCOS - nbLocoLeavedCS;
         CSFree = true;
-        mutex.release();
+        CSMutex.release();
 
         //Si nous ne sommes pas la dernière locomotive, on libère toutes les locomotives qui sont en attente
         for (int i = 0; i < nbLocoWaitingToGiveAChance; i++) {
@@ -95,28 +95,28 @@ public:
         loco.arreter();
 
         //Assignation priorité et comptage nombre de loco en attente
-        mutex2.acquire();
+        stationMutex.acquire();
         loco.priority = TOTAL_NB_LOCOS - ++nbLocoWaiting;
         int localNbLocoWaiting = nbLocoWaiting;
-        mutex2.release();
+        stationMutex.release();
 
         //Attente mutuelle des locomotives
         if (localNbLocoWaiting < TOTAL_NB_LOCOS) {
-            stationWaitMutex.acquire();
+            stationWait.acquire();
         } else {
             //Libérer les autres locomotives pour qu'elles puissent attendre puis repartir
             for (int i = 1; i < TOTAL_NB_LOCOS; i++) {
-                stationWaitMutex.release();
+                stationWait.release();
             }
         }
 
         //Attente de changement des passagers
         loco.afficherMessage("Début de l'attente commune en gare");
-        PcoThread::usleep(2e6);//TODO: get back to 5e6
+        PcoThread::usleep(5e6);
 
-        mutex2.acquire();
+        stationMutex.acquire();
         nbLocoWaiting--;
-        mutex2.release();
+        stationMutex.release();
 
         loco.demarrer();
     }
@@ -125,15 +125,15 @@ private:
     //Permet la gestion de l'entrée et sortie en section critique
     bool CSFree = true;//whether the critical section is free
     PcoSemaphore CSAccess{0};
-    PcoSemaphore mutex{1};
-    int nbLocoLeavedSC = 0;
+    int nbLocoLeavedCS = 0;
+    PcoSemaphore CSMutex{1};
 
     //Permet l'attente de l'autre locomotive en gare
-    PcoSemaphore stationWaitMutex{0};
+    PcoSemaphore stationWait{0};
 
     //Permet la gestion des priorités et l'attente commune en gare
-    PcoSemaphore mutex2{1};
     int nbLocoWaiting = 0;
+    PcoSemaphore stationMutex{1};
     const int TOTAL_NB_LOCOS = 2;
 };
 

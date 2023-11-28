@@ -12,41 +12,26 @@ La priorité d'entrée dans le troncon commun est accordée à la locomotive qui
 Voici le parcours choisi, nous avons également spécifié les contacts d'accès et d'exit, qui sont les contacts utilisés pour détecter qu'on veut y entrer ou qu'on est est sorti, afin d'appeler `access()` (pour demander l'accès) et `leave()` (pour indiquer la sortie) sur `sharedSection`.
 ![parcours-choisi.png](imgs/parcours-choisi.png)
 
-<!-- Comment avez-vous abordé le problème, quels choix avez-vous fait, quelle 
-décomposition avez-vous choisie, quelles variables ont dû être protégées, ... -->
+### Gestion de l'attente en gare
+L'attente entre les locomotives est gérée par le mutex `stationWait` initialisé à 0 (car on veut bloquer dès la première locomotive) dans la méthode `sharedSection::stopAtStation()`. Un attribut `nbLocoWaiting` compte le nombre de locomotives en attente à la station.
 
-*Note: de manière général nous avons pensé à rendre certaines parties évolutives, c'est à dire sans avoir besoin de modifier ou moins de modifications si on souhaitait avoir plus de 2 locomotives. Dans ce cas, il faudrait évidemment avoir plus que 2 voies ou plusieurs sections critiques et potentiellement d'autres règles concernant la gare. Il n'est donc pas possible de tout factoriser pour que cela soit facile d'intégrer la suite mais nous avons essayé de penser à N locomotives plutôt que juste 2.*
+Toute locomative incrémente `nbLocoWaiting` et **recalcule sa priorité**. On stocke la priorité de chaque locomotive à l'aide de l'attribut `Locomotive::priority`. On la détermine par l'ordre dans lequel elles entrent en attente à la gare. La priorité 0 est la plus prioritaire (dernière locomotive arrivée). L'avant dernière locomotive (la première en gare dans notre cas comme on en a 2) aura une priorité de 1. Le calcul exact est "nombre total de locomotives - nombre de locomotives déjà en attente", garantissant une priorité de valeur plus petite aux locomotives arrivées en dernier. Cette instruction est protégée par le mutex `stationMutex` ainsi que tous les accès en lecture ou écriture à `nbLocoWaiting`. (Cette protection est nécesaire car il peut y avoir 2 locomotives qui arrivent en même temps à la gare).
 
-#### Gestion de l'attente en gare
-L'attente entre les locomotives est gérée par le mutex `stationWaitMutex` initialisé à 0 (car on veut bloquer dès la première locomotive) dans la méthode `sharedSection::stopAtStation()`. Un attribut `nbLocoWaiting` compte le nombre de locomotives en attente à la station.
+Pour que toutes **les locomotives s'attendent en gare**, si la locomotive qui arrive n'est pas la dernière, elle acquiert le sémaphore `stationWait`. Sinon on relâche `stationWait` pour chaque autre locomotive (forcèment en attente) (`TOTAL_NB_LOCOS` - 1 release à faire), grâce à un compteur `TOTAL_NB_LOCOS` constant défini à 2 pour notre cas.
 
-Si la locomotive qui arrive n'est pas la dernière, elle incrémente `nbLocoWaiting` et acquiert le mutex `stationWaitMutex` pour bloquer dans l'attente des locomotives suivantes.
-Si la locomotive est la dernière à arriver en gare, on incrémente également `nbLocoWaiting` (pour que le calcul de priorité soit correct), puis on relâche `stationWaitMutex` pour chaque autre locomotive, grâce à un compteur `TOTAL_NB_LOCOS` constant défini à 2 pour notre cas.
-
-Une fois ce mutex libéré, les locomotives attendent chacune 5 secondes puis rédémarrent.
-
-Tous les accès en lecture ou écriture à `nbLocoWaiting` sont protégés par un mutex dédié. TODO fix
+Ensuite les locomotives attendent chacune 5 secondes, décrémente `nbLocoWaiting` (en section protégée par `stationMutex`)  puis rédémarrent.
 
 ### Gestion de l'accès au tronçon commun
-L'accès au tronçon commun est accordé à la seul locomotive qui a la priorité (`loco.priority == 0`) et si l'accès est libre. Les autres locomotives doivent attendre, cela est géré à l'aide TODO
+L'accès au tronçon commun est accordé à la seul locomotive qui a la plus haute priorité (`loco.priority == nbLocoLeavedCS`) et quand l'accès est libre. Les autres locomotives doivent attendre (arrêtant le moteur et en bloquant sur le sémaphore `CSAccess`). Comme plusieurs locomotives veulent faire un `access()` au même moment voir attendent ensemble, nous protégeons `nbLocoLeavedCS` et `CSFree` avec le mutex `CSMutex`. Une fois l'accès accordé, il suffit juste de redémarrer le moteur pour y passer.
 
-**La gestion de la priorité** est réalisée à l'aide de l'attribut `Locomotive::priority`. Chaque locomotive a une priorité attribuée, déterminée par l'ordre dans lequel elles entrent en attente à la gare. La priorité 0 est la plus prioritaire (dernière locomotive arrivée). L'avant dernière locomotive (la première en gare dans notre cas comme on en a 2) aura une priorité de 1.
+Quand la locomotive prioritaire quitte le tronçon commun, en appelant `leave()` elle va incrémenter `nbLocoLeavedCS`, calculer le nombre de locos en attente pour y relâcher le sémaphore `CSAccess` autant de fois. Nous ne pouvons pas juste faire un seul release car avec 3 locos nous pourrions avoir 2 locos en attente et la priorité attribuée ne serait pas forcèment respectée (cela engendrerait l'ordre FIFO d'acquisition de `CSAccess` et pas l'ordre des priorités de chaque loco). Nous n'avons donc pas le choix de toutes les relacher pour qu'elles réevaluent si elles sont maintenant prioritaires.
 
-Lorsqu'une locomotive arrive à la station, elle s'arrête et met à jour sa priorité en fonction du "nombre total de locomotives - nombre de locomotives déjà en attente", garantissant une priorité de valeur plus petite aux locomotives arrivées en dernier.
-Cette instruction est protégée par le mutex `mutex2` afin d'éviter des incohérences dans la lecture de `nbLocoWaiting`. 
+### Evolutivité
+En terme d'évolutivité, nous avons fait en sorte que si on voulait ajouter plus que 2 locomotives et qu'il y ait le même nombre de voies parallèles que de locomotives, ainsi que le système attente en gare soit le même, il ne faudrait changer que `cppmain.cpp` pour créer la loco et son `locomotivebehavior` associé. Il faudrait également incrémenter `TOTAL_NB_LOCOS` dans `synchro.h`.
 
-(TODO ici ou dans section partagée?)
-Lorsqu'une locomotive tente d'accéder à la section critique, elle vérifie si elle a la plus haute priorité (priorité égale à 0).
-Si c'est le cas, elle accède directement à la section critique.
-Sinon, elle s'arrête, libère l'accès à la section critique et attend que la locomotive prioritaire quitte la section.
-
-
-
+Pour ne pas avoir de code spécifique à nos 2 locomotives actuelles (7 et 42), nous avons rajouté 3 paramètres dans le constructeur de `locomotivebehavior`:
+1. `std::pair<int, int> delimitorsCS`: une pair de délimiteur début-fin pour la SC pour la loco en question
+1. `const int station`: le point de contact de la station
+1. `std::map<int, int> aiguillagesChanges`: la liste des changements à faire sur l'aiguillages au moment de rentrer en SC
 
 ## Tests effectués
-
-
-<!-- Description de chaque test, et information sur le fait qu'il ait passé ou non -->
-
-Random notes
-Important qu'une locomotive gère l'aiguillage pour elle même et pas l'autre.
