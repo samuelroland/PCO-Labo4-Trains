@@ -6,7 +6,7 @@ Auteur·ices: Vitória Oliveira et Samuel Roland
 
 Ce laboratoire a pour objectif de simuler la gestion de ressources partagées par plusieurs locomotives. Ces ressources comprennent un tronçon commun qui ne peut être emprunté par qu'une locomotive à la fois et une gare où elles doivent s'attendre à chaque tour puis repartir après 5 secondes (temps pour que les passagers changent de train).
 
-La priorité d'entrée dans le troncon commun est accordée à la locomotive qui arrive est arrivé en dernier à la gare.
+La priorité d'entrée dans le troncon commun est accordée à la locomotive qui arrive en dernier à la gare.
 
 ## Choix d'implémentation
 Voici le parcours choisi, nous avons également spécifié les contacts d'accès et d'exit, qui sont les contacts utilisés pour détecter qu'on veut y entrer ou qu'on est est sorti, afin d'appeler `access()` (pour demander l'accès) et `leave()` (pour indiquer la sortie) sur `sharedSection`.
@@ -28,7 +28,7 @@ Une fois ce mutex libéré, les locomotives attendent chacune 5 secondes puis r�
 Tous les accès en lecture ou écriture à `nbLocoWaiting` sont protégés par un mutex dédié. TODO fix
 
 ### Gestion de l'accès au tronçon commun
-L'accès au tronçon commun est accordé à la seul locomotive qui a la priorité (`loco.priority == 0`) et si l'accès est libre. Les autres locomotives doivent attendre, cela est géré à l'aide 
+L'accès au tronçon commun est accordé à la seul locomotive qui a la priorité (`loco.priority == 0`) et si l'accès est libre. Les autres locomotives doivent attendre, cela est géré à l'aide TODO
 
 **La gestion de la priorité** est réalisée à l'aide de l'attribut `Locomotive::priority`. Chaque locomotive a une priorité attribuée, déterminée par l'ordre dans lequel elles entrent en attente à la gare. La priorité 0 est la plus prioritaire (dernière locomotive arrivée). L'avant dernière locomotive (la première en gare dans notre cas comme on en a 2) aura une priorité de 1.
 
@@ -36,8 +36,8 @@ Lorsqu'une locomotive arrive à la station, elle s'arrête et met à jour sa pri
 Cette instruction est protégée par le mutex `mutex2` afin d'éviter des incohérences dans la lecture de `nbLocoWaiting`. 
 
 (TODO ici ou dans section partagée?)
-Lorsqu'une locomotive tente d'accéder à la section critique, elle vérifie si elle a la priorité (priorité égale à 0).
-Si elle a la priorité, elle accède directement à la section critique.
+Lorsqu'une locomotive tente d'accéder à la section critique, elle vérifie si elle a la plus haute priorité (priorité égale à 0).
+Si c'est le cas, elle accède directement à la section critique.
 Sinon, elle s'arrête, libère l'accès à la section critique et attend que la locomotive prioritaire quitte la section.
 
 
