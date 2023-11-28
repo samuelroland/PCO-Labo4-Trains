@@ -35,3 +35,15 @@ Pour ne pas avoir de code spécifique à nos 2 locomotives actuelles (7 et 42), 
 1. `std::map<int, int> aiguillagesChanges`: la liste des changements à faire sur l'aiguillages au moment de rentrer en SC
 
 ## Tests effectués
+Nous executé notre programme en gardant l'inertie et laissé quelques tours pour vérifier que toutes les contraintes étaient fonctionnelles.
+
+D'abord on voit que la priorité et l'attente sont respecté, la loco 7 attend bien avant l'entrée de la SC et part dès que la loco 42 a quitté la SC.
+![waiting.png](imgs/waiting.png)
+
+Dans ce cas, nous avons testé que l'attente en gare se fait correctement (loco 42) et le compteur de 5s n'a pas encore démarré, en mettant en pause la loco 7.
+![break-wait.png](imgs/break-wait.png)
+
+Nous voyons ici que la loco 42 arrivant après, est bien laissée prioritaire pour la SC.
+![arriving-after.png](imgs/arriving-after.png)
+On voit également que les aiguillages 15 et 8 ont bien été switchés pour cette loco.
+![priority.png](imgs/priority.png)
