@@ -15,16 +15,8 @@ void LocomotiveBehavior::run() {
     loco.demarrer();
     loco.afficherMessage("Ready!");
 
-    /* A vous de jouer ! */
-
-    // Vous pouvez appeler les méthodes de la section partagée comme ceci :
-    //sharedSection->access(loco);
-
-    //sharedSection->leave(loco);
-    //sharedSection->stopAtStation(loco);
-
     while (true) {
-        // Gare
+        // Attente en gare
         attendre_contact(station);
         sharedSection->stopAtStation(loco);
 
@@ -34,6 +26,7 @@ void LocomotiveBehavior::run() {
         sharedSection->access(loco);
         loco.afficherMessage("En route dans la section commune");
 
+        //Faire tous les changements d'aiguillages nécessaires pour passer en SC
         for (auto change: aiguillagesChanges) {
             diriger_aiguillage(change.first, change.second, 0);
         }
