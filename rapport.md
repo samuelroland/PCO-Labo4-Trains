@@ -8,9 +8,11 @@ Ce laboratoire a pour objectif de simuler la gestion de ressources partagées pa
 
 La priorité d'entrée dans le troncon commun est accordée à la locomotive qui arrive en dernier à la gare.
 
-## Choix d'implémentation
-Voici le parcours choisi, nous avons également spécifié les contacts d'accès et d'exit, qui sont les contacts utilisés pour détecter qu'on veut y entrer ou qu'on est est sorti, afin d'appeler `access()` (pour demander l'accès) et `leave()` (pour indiquer la sortie) sur `sharedSection`.
 ![parcours-choisi.png](imgs/parcours-choisi.png)
+
+Voici le parcours choisi, nous avons également spécifié les contacts d'accès et d'exit, qui sont les contacts utilisés pour détecter qu'on veut y entrer ou qu'on est est sorti, afin d'appeler `access()` (pour demander l'accès) et `leave()` (pour indiquer la sortie) sur `sharedSection`.
+
+## Choix d'implémentation
 
 ### Gestion de l'attente en gare
 L'attente entre les locomotives est gérée par le mutex `stationWait` initialisé à 0 (car on veut bloquer dès la première locomotive) dans la méthode `sharedSection::stopAtStation()`. Un attribut `nbLocoWaiting` compte le nombre de locomotives en attente à la station.
@@ -24,18 +26,21 @@ Ensuite les locomotives attendent chacune 5 secondes, décrémente `nbLocoWaitin
 ### Gestion de l'accès au tronçon commun
 L'accès au tronçon commun est accordé à la seul locomotive qui a la plus haute priorité (`loco.priority == nbLocoLeavedCS`) et quand l'accès est libre. Les autres locomotives doivent attendre (arrêtant le moteur et en bloquant sur le sémaphore `CSAccess`). Comme plusieurs locomotives veulent faire un `access()` au même moment voir attendent ensemble, nous protégeons `nbLocoLeavedCS` et `CSFree` avec le mutex `CSMutex`. Une fois l'accès accordé, il suffit juste de redémarrer le moteur pour y passer.
 
-Quand la locomotive prioritaire quitte le tronçon commun, en appelant `leave()` elle va incrémenter `nbLocoLeavedCS`, calculer le nombre de locos en attente pour y relâcher le sémaphore `CSAccess` autant de fois. Nous ne pouvons pas juste faire un seul release car avec 3 locos nous pourrions avoir 2 locos en attente et la priorité attribuée ne serait pas forcèment respectée (cela engendrerait l'ordre FIFO d'acquisition de `CSAccess` et pas l'ordre des priorités de chaque loco). Nous n'avons donc pas le choix de toutes les relacher pour qu'elles réevaluent si elles sont maintenant prioritaires.
+Quand la locomotive prioritaire quitte le tronçon commun, en appelant `leave()` elle va incrémenter `nbLocoLeavedCS`, calculer le nombre de locos en attente pour y relâcher le sémaphore `CSAccess` autant de fois. Il est important de noter que nous ne pouvons pas simplement effectuer une seule libération (release()) car, avec trois locomotives, par exemple, deux locomotives pourraient être en attente, et la priorité attribuée ne serait pas nécessairement respectée. Cela entraînerait l'acquisition du sémaphore CSAccess dans l'ordre FIFO, plutôt que dans l'ordre de priorité de chaque locomotive. Par conséquent, nous sommes contraints de libérer toutes les locomotives en attente, permettant ainsi une réévaluation de leur priorité respective.
 
 ### Evolutivité
-En terme d'évolutivité, nous avons fait en sorte que si on voulait ajouter plus que 2 locomotives et qu'il y ait le même nombre de voies parallèles que de locomotives, ainsi que le système attente en gare soit le même, il ne faudrait changer que `cppmain.cpp` pour créer la loco et son `locomotivebehavior` associé. Il faudrait également incrémenter `TOTAL_NB_LOCOS` dans `synchro.h`.
+
+En termes d'évolutivité, nous avons conçu le système de manière à ce que l'ajout de locomotives supplémentaires, avec un nombre équivalent de voies parallèles et un système d'attente en gare similaire, ne nécessite que des modifications minimes dans le fichier `cppmain.cpp` pour créer la locomotive et son comportement associé (`locomotivebehavior`). De plus, il suffirait d'incrémenter la constante `TOTAL_NB_LOCOS` dans le fichier synchro.h.
 
 Pour ne pas avoir de code spécifique à nos 2 locomotives actuelles (7 et 42), nous avons rajouté 3 paramètres dans le constructeur de `locomotivebehavior`:
 1. `std::pair<int, int> delimitorsCS`: une pair de délimiteur début-fin pour la SC pour la loco en question
 1. `const int station`: le point de contact de la station
 1. `std::map<int, int> aiguillagesChanges`: la liste des changements à faire sur l'aiguillages au moment de rentrer en SC
 
+<div class="page">
+
 ## Tests effectués
-Nous executé notre programme en gardant l'inertie et laissé quelques tours pour vérifier que toutes les contraintes étaient fonctionnelles.
+Nous avons executé notre programme en gardant l'inertie et laissé quelques tours pour vérifier que toutes les contraintes étaient fonctionnelles.
 
 D'abord on voit que la priorité et l'attente sont respecté, la loco 7 attend bien avant l'entrée de la SC et part dès que la loco 42 a quitté la SC.
 ![waiting.png](imgs/waiting.png)
@@ -44,6 +49,9 @@ Dans ce cas, nous avons testé que l'attente en gare se fait correctement (loco 
 ![break-wait.png](imgs/break-wait.png)
 
 Nous voyons ici que la loco 42 arrivant après, est bien laissée prioritaire pour la SC.
+
 ![arriving-after.png](imgs/arriving-after.png)
+
 On voit également que les aiguillages 15 et 8 ont bien été switchés pour cette loco.
+
 ![priority.png](imgs/priority.png)
