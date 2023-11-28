@@ -125,7 +125,7 @@ private:
     //Permet l'attente de l'autre locomotive en gare
     PcoSemaphore stationWaitMutex{0};
 
-    //Permet la gestion des priorités
+    //Permet la gestion des priorités et l'attente commune en gare
     PcoSemaphore mutex2{1};
     int nbLocoWaiting = 0;
     const int TOTAL_NB_LOCOS = 2;
