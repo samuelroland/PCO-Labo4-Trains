@@ -28,6 +28,8 @@ L'accès au tronçon commun est accordé à la seul locomotive qui a la plus hau
 
 Quand la locomotive prioritaire quitte le tronçon commun, en appelant `leave()` elle va incrémenter `nbLocoLeavedCS`, calculer le nombre de locos en attente pour y relâcher le sémaphore `CSAccess` autant de fois. Il est important de noter que nous ne pouvons pas simplement effectuer une seule libération (release()) car, avec trois locomotives, par exemple, deux locomotives pourraient être en attente, et la priorité attribuée ne serait pas nécessairement respectée. Cela entraînerait l'acquisition du sémaphore CSAccess dans l'ordre FIFO, plutôt que dans l'ordre de priorité de chaque locomotive. Par conséquent, nous sommes contraints de libérer toutes les locomotives en attente, permettant ainsi une réévaluation de leur priorité respective.
 
+<br>
+
 ### Evolutivité
 
 En termes d'évolutivité, nous avons conçu le système de manière à ce que l'ajout de locomotives supplémentaires, avec un nombre équivalent de voies parallèles et un système d'attente en gare similaire, ne nécessite que des modifications minimes dans le fichier `cppmain.cpp` pour créer la locomotive et son comportement associé (`locomotivebehavior`). De plus, il suffirait d'incrémenter la constante `TOTAL_NB_LOCOS` dans le fichier synchro.h.
@@ -47,6 +49,23 @@ D'abord on voit que la priorité et l'attente sont respecté, la loco 7 attend b
 
 Dans ce cas, nous avons testé que l'attente en gare se fait correctement (loco 42) et le compteur de 5s n'a pas encore démarré, en mettant en pause la loco 7.
 ![break-wait.png](imgs/break-wait.png)
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
 Nous voyons ici que la loco 42 arrivant après, est bien laissée prioritaire pour la SC.
 
