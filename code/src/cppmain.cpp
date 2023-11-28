@@ -54,7 +54,7 @@ int cmain() {
     diriger_aiguillage(4, TOUT_DROIT, 0);
     diriger_aiguillage(5, TOUT_DROIT, 0);
     diriger_aiguillage(6, TOUT_DROIT, 0);
-    diriger_aiguillage(7, TOUT_DROIT, 0);
+    diriger_aiguillage(7, DEVIE, 0);
     diriger_aiguillage(8, DEVIE, 0);
     diriger_aiguillage(9, DEVIE, 0);
     diriger_aiguillage(10, TOUT_DROIT, 0);
@@ -101,9 +101,9 @@ int cmain() {
     std::shared_ptr<SynchroInterface> sharedSection = std::make_shared<Synchro>();
 
     // Création du thread pour la loco 0
-    std::unique_ptr<Launchable> locoBehaveA = std::make_unique<LocomotiveBehavior>(locoA, sharedSection, std::make_pair(25, 14), 33 /*, autres paramètres ...*/);
+    std::unique_ptr<Launchable> locoBehaveA = std::make_unique<LocomotiveBehavior>(locoA, sharedSection, std::make_pair(25, 14), 33, (std::map<int, int>){std::make_pair(15, DEVIE), std::make_pair(8, DEVIE)} /*, autres paramètres ...*/);
     // Création du thread pour la loco 1
-    std::unique_ptr<Launchable> locoBehaveB = std::make_unique<LocomotiveBehavior>(locoB, sharedSection, std::make_pair(22, 10), 29 /*, autres paramètres ...*/);
+    std::unique_ptr<Launchable> locoBehaveB = std::make_unique<LocomotiveBehavior>(locoB, sharedSection, std::make_pair(22, 10), 29, (std::map<int, int>){std::make_pair(15, TOUT_DROIT), std::make_pair(8, TOUT_DROIT)} /*, autres paramètres ...*/);
 
     // Lanchement des threads
     afficher_message(qPrintable(QString("Lancement thread loco A (numéro %1)").arg(locoA.numero())));

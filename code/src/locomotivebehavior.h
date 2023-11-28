@@ -23,7 +23,7 @@ public:
      * \brief locomotiveBehavior Constructeur de la classe
      * \param loco la locomotive dont on représente le comportement
      */
-    LocomotiveBehavior(Locomotive &loco, std::shared_ptr<SynchroInterface> sharedSection, std::pair<int, int> delimitorsCS, const int station/*, autres paramètres éventuels */) : loco(loco), sharedSection(sharedSection), delimitorsCS(delimitorsCS), station(station){
+    LocomotiveBehavior(Locomotive &loco, std::shared_ptr<SynchroInterface> sharedSection, std::pair<int, int> delimitorsCS, const int station, std::map<int, int> aiguillagesChanges /*, autres paramètres éventuels */) : loco(loco), sharedSection(sharedSection), delimitorsCS(delimitorsCS), station(station), aiguillagesChanges(aiguillagesChanges) {
         // Eventuel code supplémentaire du constructeur
     }
 
@@ -59,10 +59,12 @@ protected:
      * Par exemple la priorité ou le parcours
      */
 
-    //Delimitors of the train critical section (start and end contact numbers)
+    // Délimiteurs de la section critique (numéros de conctact de début et fin)
     const std::pair<int, int> delimitorsCS;
-    //Train station contact number
+    //Numéro de contact de la gare
     const int station;
+    //Changements à faire sur l'aiguillages avant au moment de rentrer en SC
+    std::map<int, int> aiguillagesChanges;
 };
 
 #endif// LOCOMOTIVEBEHAVIOR_H

@@ -40,19 +40,21 @@ public:
      */
     void access(Locomotive &loco) override {
         mutex.acquire();
-        //Then look if the critical section is free -> go or wait.
-        if (CSFree && loco.priority == 0) {
-            CSFree = false;
+        //Tant que ce n'est pas libre et qu'on est pas la prochaine locomotive à pouvoir traverser la SC
+        while (!CSFree || loco.priority != nbLocoLeavedSC) {
             mutex.release();
-
-            loco.afficherMessage(qPrintable(QString("Je suis prioritaire (priority = %1) pour la SC").arg(loco.priority)));
-        } else {
-            mutex.release();
-            loco.afficherMessage(qPrintable(QString("Je ne suis PAS prioritaire (priority = %1) donc j'attends !").arg(loco.priority)));
             loco.arreter();
+            loco.afficherMessage(qPrintable(QString("Je ne suis PAS prioritaire (priority = %1) donc j'attends !").arg(loco.priority)));
             CSAccess.acquire();
-            loco.demarrer();
+            mutex.acquire();
         }
+        CSFree = false;
+        mutex.release();
+
+        loco.demarrer();
+
+        loco.afficherMessage(qPrintable(QString("Je suis prioritaire (priority = %1) pour la SC").arg(loco.priority)));
+
         afficher_message(qPrintable(QString("The engine no. %1 accesses the shared section.").arg(loco.numero())));
     }
 
@@ -65,12 +67,15 @@ public:
      */
     void leave(Locomotive &loco) override {
         mutex.acquire();
+        nbLocoLeavedSC = ++nbLocoLeavedSC % TOTAL_NB_LOCOS;
+        int nbLocoWaitingToGiveAChance = TOTAL_NB_LOCOS - nbLocoLeavedSC;
         CSFree = true;
         mutex.release();
 
-        //Si nous sommes la locomotive prioritaire, nous pouvons relacher l'accès pour l'autre
-        if (loco.priority == 0)
+        //Si nous ne sommes pas la dernière locomotive, on libère toutes les locomotives qui sont en attente
+        for (int i = 0; i < nbLocoWaitingToGiveAChance; i++) {
             CSAccess.release();
+        }
 
         afficher_message(qPrintable(QString("The engine no. %1 leaves the shared section.").arg(loco.numero())));
     }
@@ -121,6 +126,7 @@ private:
     bool CSFree = true;//whether the critical section is free
     PcoSemaphore CSAccess{0};
     PcoSemaphore mutex{1};
+    int nbLocoLeavedSC = 0;
 
     //Permet l'attente de l'autre locomotive en gare
     PcoSemaphore stationWaitMutex{0};

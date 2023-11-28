@@ -34,18 +34,8 @@ void LocomotiveBehavior::run() {
         sharedSection->access(loco);
         loco.afficherMessage("En route dans la section commune");
 
-        //Changer l'aiguillage 8 pour que notre sortie de SC se fasse correctement
-        if (loco.numero() == 7) {//loco rouge
-            // diriger_aiguillage(17, TOUT_DROIT, 0);
-            // diriger_aiguillage(15, DEVIE, 0);
-            diriger_aiguillage(8, DEVIE, 0);
-            // diriger_aiguillage(11, DEVIE, 0);
-        }
-        if (loco.numero() == 42) {//loco bleu
-            diriger_aiguillage(8, TOUT_DROIT, 0);
-            // diriger_aiguillage(15, TOUT_DROIT, 0);
-            // diriger_aiguillage(7, DEVIE, 0);
-            // diriger_aiguillage(11, TOUT_DROIT, 0);
+        for (auto change: aiguillagesChanges) {
+            diriger_aiguillage(change.first, change.second, 0);
         }
 
         // Sortie de la SC
